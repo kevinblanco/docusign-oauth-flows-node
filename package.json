@@ -1,0 +1,14 @@
+{
+  "name": "docusign-oauth-flows",
+  "version": "1.0.0",
+  "description": "Docusign OAuth, three ways: JWT Grant, Confidential Authorization Code Grant, and Public Authorization Code Grant with PKCE. One local app, no SDK, no dependencies.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  }
+}

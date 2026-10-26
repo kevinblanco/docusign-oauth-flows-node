@@ -1,0 +1,6 @@
+# Secrets stay on your machine
+.env
+private.key
+*.pem
+node_modules/
+.DS_Store
