@@ -6,7 +6,7 @@ One local app that runs each Docusign OAuth flow against your developer account 
 - **Confidential Authorization Code Grant.** A person signs in, and your server exchanges the code with its secret key for an access token and a refresh token.
 - **Public Authorization Code Grant with PKCE.** A person signs in to a single-page app that can't keep a secret. A code verifier and its SHA-256 challenge take the secret's place. The whole flow runs in the browser, over CORS.
 
-There's no SDK and nothing to install. It needs Node.js 20.12 or later, which has `fetch` and `crypto` built in. IDs and tokens are masked on the page so you can record your screen.
+There's no SDK and nothing to install. It needs Node.js 20.12 or later, which has `fetch` and `crypto` built in. IDs and tokens are masked on the page, so it's safe to share or screenshot.
 
 ## Which flow?
 
@@ -61,7 +61,7 @@ The pages follow the look of Docusign's web app and Developer Console. They use 
 | `/jwt` | Build and sign the JWT (`iss`, `sub`, `aud`, `iat`, `exp`, `scope=signature impersonation`) → `POST /oauth/token`. The first time, Docusign answers `consent_required` and the page gives you the consent URL. Accept once, then request again → `GET /oauth/userinfo` → one eSignature REST API call. |
 | `/acg` | Redirect to `/oauth/auth` → back at `/acg/callback` with `?code=`, and a two-minute countdown → `POST /oauth/token` with Basic auth (integration key and secret key) → access token and refresh token → userinfo → one API call → **Refresh**. Tick *extended scope* to have each refresh renew the refresh token's full lifetime. |
 | `/pkce` | Generate the code verifier → hash it into the code challenge (SHA-256, Base64URL) → sign in with `code_challenge` and `code_challenge_method=S256` → exchange the code with `code_verifier` and no secret, straight from the browser → userinfo and one API call, over CORS → **Refresh**. |
-| `/errors` | The five errors from the tutorial, and a way to cause each one. |
+| `/errors` | Five common errors, and a way to cause each one. |
 
 ## Break it on purpose
 
@@ -119,3 +119,7 @@ This is a teaching app. It serves one person on localhost and keeps tokens in me
 - [Single-page applications and CORS](https://developers.docusign.com/platform/single-page-applications-cors/)
 - [Configure your app](https://developers.docusign.com/platform/configure-app/)
 - [Obtain and revoke consent](https://developers.docusign.com/platform/auth/consent/)
+
+## License
+
+MIT. See [LICENSE](LICENSE).

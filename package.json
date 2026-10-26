@@ -2,6 +2,7 @@
   "name": "docusign-oauth-flows",
   "version": "1.0.0",
   "description": "Docusign OAuth, three ways: JWT Grant, Confidential Authorization Code Grant, and Public Authorization Code Grant with PKCE. One local app, no SDK, no dependencies.",
+  "license": "MIT",
   "type": "module",
   "private": true,
   "engines": {

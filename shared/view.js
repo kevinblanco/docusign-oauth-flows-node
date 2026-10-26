@@ -1,7 +1,7 @@
 // How the app shows what goes over the wire: masking, error explanations, and
 // the HTML for one step. No DOM calls, so server.js and the PKCE page share it.
 
-/* ── masking: IDs, tokens and secrets stay off screen recordings ────────── */
+/* ── masking: IDs, tokens and secrets never show in full on the page ───── */
 
 const GUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const EMAIL = /^[^@\s]+@[^@\s]+$/;
@@ -36,7 +36,7 @@ export function redact(value, key = "") {
   return mask.ids(value);
 }
 
-/* ── what an error means: the causes from the tutorial's error chapter ──── */
+/* ── what an error means: the common causes, and how to fix each ───────── */
 
 export function explain({ status, body = {} }) {
   const error = String(body.error ?? "").toLowerCase();

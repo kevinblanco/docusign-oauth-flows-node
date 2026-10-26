@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Docusign OAuth, three ways: one local app that runs each flow from the
-// tutorial and shows every request and response, with IDs and tokens masked.
+// Docusign OAuth, three ways: one local app that runs each flow and shows
+// every request and response, with IDs and tokens masked.
 //
 //   /jwt      JWT Grant                               on the server   flows/jwt.js
 //   /acg      Confidential Authorization Code Grant   on the server   flows/authcode.js
 //   /pkce     Public Authorization Code Grant + PKCE  in the browser  public/pkce.js
-//   /errors   the five errors from the tutorial, and how to cause each one here
+//   /errors   five common errors, and how to cause each one here
 //
 // No SDK, no dependencies: Node.js 20.12+ with its built-in fetch and crypto.
 // Setup: copy .env.example to .env and fill it in. See README.md.
@@ -287,7 +287,7 @@ function errorsPage() {
   return layout({
     active: "/errors",
     title: "Reading the errors",
-    intro: "The five errors from the tutorial, and a way to cause each one here, safely, against your developer account.",
+    intro: "Five common errors, and a way to cause each one here, safely, against your developer account.",
     body: `<div class="steps">
     ${section(
       "consent_required",
@@ -456,7 +456,7 @@ async function acgRefresh() {
 /* ── PKCE: only one server route, to show what happens without a browser ─ */
 
 async function pkceWithoutOrigin(form) {
-  if (form.grant_type !== "authorization_code" || form.client_id !== CONFIG.publicIntegrationKey) return { ok: false, status: 400, body: { error: "not_this_demo" } };
+  if (form.grant_type !== "authorization_code" || form.client_id !== CONFIG.publicIntegrationKey) return { ok: false, status: 400, body: { error: "unsupported_request" } };
   return send(tokenRequest(CONFIG.authServer, form)); // Node's fetch sends no Origin header
 }
 

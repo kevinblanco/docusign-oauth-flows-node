@@ -35,8 +35,8 @@ export const consentUrl = ({ authServer, integrationKey, redirectUri }) =>
   authorizeUrl(authServer, { response_type: "code", scope: JWT_SCOPE, client_id: integrationKey, redirect_uri: redirectUri, prompt: "login" });
 
 /**
- * Ways to break the request on purpose, one per cause in the tutorial's error
- * chapter. Each changes one input; everything else stays correct.
+ * Ways to break the request on purpose, one per common cause of a failed JWT
+ * Grant. Each changes one input; everything else stays correct.
  */
 export const JWT_BREAKS = {
   clock: {
