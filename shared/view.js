@@ -1,7 +1,11 @@
 // How the app shows what goes over the wire: masking, error explanations, and
 // the HTML for one step. No DOM calls, so server.js and the PKCE page share it.
 
-/* ── masking: IDs, tokens and secrets never show in full on the page ───── */
+/* ── masking: IDs, emails, tokens and secret keys ──────────────────────── */
+
+// MASK_IDS=false shows everything but secret keys. Never masked: the user's name,
+// the account name, the single-use PKCE code verifier, and the
+// authorization code in the address bar.
 
 const GUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const EMAIL = /^[^@\s]+@[^@\s]+$/;
@@ -41,8 +45,12 @@ export function redact(value, key = "") {
 export function explain({ status, body = {} }) {
   const error = String(body.error ?? "").toLowerCase();
   const detail = String(body.error_description ?? body.message ?? "");
+  if (status === 0 && typeof window === "undefined") return "No response from Docusign: check the network and the URL in the request above.";
   if (status === 0)
     return `No response reached the page: the browser hid Docusign's answer because it had no CORS header. Check the app's origin URL (${globalThis.location?.origin ?? "http://localhost:3000"}), its allowed methods (GET and POST), and that Allow CORS for OAuth calls is selected. Changes take up to five minutes to apply. To read Docusign's actual answer, start over, sign in, and send the code from a server.`;
+  if (error === "state_mismatch") return "This redirect doesn't belong to the sign-in this page started. Sign in again.";
+  if (error === "no_code") return "No authorization code came back with this redirect. Sign in again.";
+  if (error === "access_denied") return "Access was denied, usually because it was declined on Docusign's consent screen. To continue, sign in again and accept.";
   if (error === "consent_required")
     return "The user hasn't approved these scopes for this integration key yet, or approved them as someone else. Open the consent URL once. prompt=login makes Docusign ask who is signing in.";
   if (/origin/i.test(detail))
@@ -122,10 +130,19 @@ function headerValue(name, value) {
   return value;
 }
 
+/** A query value, decoded. One that isn't valid percent-encoding shows as it arrived. */
+function decode(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 /** A request the way it goes over the wire: one query parameter, header or form field per line. */
 export function requestHtml({ method, url, headers = {}, form, implicitHeaders = {} }) {
   const [base, query] = url.split("?");
-  const params = query ? query.split("&").map((p) => p.split("=")).map(([k, v = ""]) => [k, decodeURIComponent(v)]) : [];
+  const params = query ? query.split("&").map((p) => p.split("=")).map(([k, v = ""]) => [k, decode(v)]) : [];
   const lines = [
     `<div class="line"><b class="verb">${esc(method)}</b> ${esc(mask.ids(base))}</div>`,
     ...params.map(([k, v], i) => `<div class="line q">${i ? "&amp;" : "?"}<span class="k">${esc(k)}</span>=${esc(redact(v, k))}</div>`),

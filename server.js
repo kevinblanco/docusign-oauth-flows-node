@@ -287,7 +287,7 @@ function errorsPage() {
   return layout({
     active: "/errors",
     title: "Reading the errors",
-    intro: "Five common errors, and a way to cause each one here, safely, against your developer account.",
+    intro: "Five common errors, and a way to cause each one here. Four use your developer account; the last posts to Docusign's production auth server on purpose.",
     body: `<div class="steps">
     ${section(
       "consent_required",
@@ -401,7 +401,7 @@ function acgReturned(url) {
   if (code && code === acg.code) return; // a reload: nothing new
   const error = url.searchParams.get("error");
   const redirect = { method: "GET", url: url.href };
-  if (error || !code || url.searchParams.get("state") !== acg.state) {
+  if (error || !code || !acg.state || url.searchParams.get("state") !== acg.state) {
     const body = error
       ? { error, error_description: url.searchParams.get("error_description") ?? "" }
       : { error: code ? "state_mismatch" : "no_code", error_description: "This redirect doesn't belong to the sign-in this app started." };
@@ -456,7 +456,7 @@ async function acgRefresh() {
 /* ── PKCE: only one server route, to show what happens without a browser ─ */
 
 async function pkceWithoutOrigin(form) {
-  if (form.grant_type !== "authorization_code" || form.client_id !== CONFIG.publicIntegrationKey) return { ok: false, status: 400, body: { error: "unsupported_request" } };
+  if (form?.grant_type !== "authorization_code" || form.client_id !== CONFIG.publicIntegrationKey) return { ok: false, status: 400, body: { error: "unsupported_request" } };
   return send(tokenRequest(CONFIG.authServer, form)); // Node's fetch sends no Origin header
 }
 
@@ -470,13 +470,27 @@ const STATIC = {
   "/shared/view.js": ["shared/view.js", "text/javascript"],
 };
 
+const MAX_BODY = 64 * 1024; // the longest body here is a code and its verifier
+
+/** A request body. Past the limit the rest is read but not kept, so the answer still gets through. */
 async function readBody(req) {
   let data = "";
-  for await (const chunk of req) data += chunk;
+  for await (const chunk of req) if (data.length <= MAX_BODY) data += chunk;
+  if (data.length > MAX_BODY) throw Object.assign(new Error("the request body is too large"), { status: 413 });
   return data;
 }
 
+/** The JSON in a request body, or null if it isn't JSON. */
+function parseJson(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 const html = (res, page) => res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" }).end(page);
+const json = (res, value, status = 200) => res.writeHead(status, { "Content-Type": "application/json" }).end(JSON.stringify(value));
 const redirect = (res, location, status = 303) => res.writeHead(status, { Location: location }).end();
 
 async function route(req, res) {
@@ -485,7 +499,8 @@ async function route(req, res) {
 
   if (req.method === "GET" && STATIC[url.pathname]) {
     const [file, type] = STATIC[url.pathname];
-    return res.writeHead(200, { "Content-Type": `${type}; charset=utf-8`, "Cache-Control": "no-store" }).end(await readFile(path.join(HERE, file)));
+    const content = await readFile(path.join(HERE, file));
+    return res.writeHead(200, { "Content-Type": `${type}; charset=utf-8`, "Cache-Control": "no-store" }).end(content);
   }
 
   switch (key) {
@@ -522,8 +537,10 @@ async function route(req, res) {
     case "GET /pkce":
     case "GET /pkce/callback":
       return html(res, pkcePage());
-    case "POST /pkce/no-origin":
-      return res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify(await pkceWithoutOrigin(JSON.parse((await readBody(req)) || "{}"))));
+    case "POST /pkce/no-origin": {
+      const form = parseJson((await readBody(req)) || "{}");
+      return json(res, await pkceWithoutOrigin(form), form ? 200 : 400);
+    }
   }
   res.writeHead(404, { "Content-Type": "text/plain" }).end("Not found");
 }
@@ -531,7 +548,7 @@ async function route(req, res) {
 const server = createServer((req, res) =>
   route(req, res).catch((err) => {
     console.error(err);
-    if (!res.headersSent) res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" }).end(`Something broke: ${err.message}`);
+    if (!res.headersSent) res.writeHead(err.status ?? 500, { "Content-Type": "text/plain; charset=utf-8" }).end(`Something broke: ${err.message}`);
   }),
 );
 

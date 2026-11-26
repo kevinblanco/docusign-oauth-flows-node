@@ -6,7 +6,7 @@ One local app that runs each Docusign OAuth flow against your developer account 
 - **Confidential Authorization Code Grant.** A person signs in, and your server exchanges the code with its secret key for an access token and a refresh token.
 - **Public Authorization Code Grant with PKCE.** A person signs in to a single-page app that can't keep a secret. A code verifier and its SHA-256 challenge take the secret's place. The whole flow runs in the browser, over CORS.
 
-There's no SDK and nothing to install. It needs Node.js 20.12 or later, which has `fetch` and `crypto` built in. IDs and tokens are masked on the page, so it's safe to share or screenshot.
+There's no SDK and nothing to install. It needs Node.js 20.12 or later, which has `fetch` and `crypto` built in. IDs and tokens are masked on the page, but the user's name, the account name, the single-use PKCE code verifier and the authorization code in the address bar are not, so check a screenshot before you share it.
 
 ## Which flow?
 
@@ -71,7 +71,7 @@ The pages follow the look of Docusign's web app and Developer Console. They use 
 | `invalid_grant: Origin required but not included` | On the PKCE page, after sign-in: *from a server, no Origin*. |
 | `invalid_grant` / `no_valid_keys_or_signatures` | JWT Grant: *a server clock two hours slow*, or *an RSA key Docusign has never seen*. ACG: wait out the two-minute countdown. PKCE: *a different verifier*. |
 | *The response type is not supported* | `/errors`: ask the Authorization Code Grant app for an Implicit Grant token. |
-| `400 Bad Request` on the token call | JWT Grant: *the production endpoint*. |
+| `400 Bad Request` on the token call | JWT Grant: *the production endpoint*. It posts to Docusign's production auth server on purpose. |
 
 ## Files
 
